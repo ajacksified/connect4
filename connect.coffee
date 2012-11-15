@@ -1,32 +1,32 @@
-clc = require('cli-color')
+# So basically how this is organized-
+#
+# 1. Minimum cyclomatic complexity; less if checks and loops is better
+# 2. Minimum width lines; less complex statements are better
+# 3. Reusable interface; the grid class should be reusable, and private
+#    functions are hidden from the public interface
+# 4. Minimum magic strings and numbers; most options should be passed in
+#    and configurable.
+#
+# These choices were made at a higher priority than optimization or brevity.
 
-shuffle = (array) ->
-  top = array.length;
-
-  if top
-    while --top
-      current = Math.floor(Math.random() * (top + 1))
-      tmp = array[current]
-      array[current] = array[top]
-      array[top] = tmp
-
-  array
-
-colors = shuffle(['bgRed', 'bgGreen', 'bgYellow', 'bgBlue', 'bgMagenta', 'bgCyan'])
-
-resetColor = '\u001b[0m'
-
-winRegex = (row, player) ->
+# Basically a one-liner for checking wins, instead of setting up counters and
+# stuff.
+isWinForRow = (row, player) ->
   reg = new RegExp("(#{player},?){4}")
   return row.join(",").match(reg)
 
+# Take a given row, and pass it into the row tester.
 isHorizontalWin = (row, grid, player) ->
-  return winRegex(grid[row], player)
+  return isWinForRow(grid[row], player)
 
+# Make a row out of a vertical column, and pass it on in.
 isVerticalWin = (column, grid, player) ->
   columnCells = (grid[row][column] for row in [0...grid.length])
-  return winRegex(columnCells, player)
+  return isWinForRow(columnCells, player)
 
+# Make two rows (and quit early if the first one works); figure out the vector
+# path from the bottom left and the top left that crosses the coordinates we
+# pass in.
 isDiagonalWin = (row, column, grid, player) ->
   diagonalBottomLeft = []
 
@@ -41,7 +41,7 @@ isDiagonalWin = (row, column, grid, player) ->
     startingColumn++
     notEdge = !(grid.length == startingRow || grid[0].length == startingColumn)
 
-  return true if winRegex(diagonalBottomLeft, player)
+  return true if isWinForRow(diagonalBottomLeft, player)
 
   diagonalTopLeft = []
   delta = Math.max(Math.min(grid[0].length - 1 - row, column) - 1, 0)
@@ -56,10 +56,12 @@ isDiagonalWin = (row, column, grid, player) ->
     startingColumn++
     notEdge = !(startingRow < 0 || grid[0].length == startingColumn)
 
-  return true if winRegex(diagonalTopLeft, player)
+  return true if isWinForRow(diagonalTopLeft, player)
 
   return false
 
+# Drop into the given column, but error if the column is full or if the value
+# passed in is out of bounds or invalid.
 drop = (column, grid, xSize, ySize, player, callback) ->
   return callback("Invalid column #{column}; out of range!") if column < 1 || column > xSize
 
@@ -72,6 +74,7 @@ drop = (column, grid, xSize, ySize, player, callback) ->
 
   callback("Invalid column #{column + 1}; that column is full!")
 
+# Run our win conditions, and return the result.
 isWin = (row, column, grid, player) ->
   return true if isHorizontalWin(row, grid, player)
   return true if isVerticalWin(column, grid, player)
@@ -79,7 +82,8 @@ isWin = (row, column, grid, player) ->
 
   return false
 
-lastTurn = (grid, turns) ->
+# Just a quick check.
+isLastTurn = (grid, turns) ->
   return grid.length * grid[0].length == turns
 
 class Connect4Grid
@@ -103,7 +107,7 @@ class Connect4Grid
       @turns++
 
       return callback(null, { winner: player, turns: @turns }) if isWin(row, column - 1, @grid, player)
-      return callback(null, { winner: "nobody", turns: @turns }) if lastTurn(@grid, @turns)
+      return callback(null, { winner: "nobody", turns: @turns }) if isLastTurn(@grid, @turns)
 
       @currentPlayerIndex++
 
@@ -113,7 +117,7 @@ class Connect4Grid
       callback(null, false)
     )
 
-  toString: ->
+  toString: (playerFormat) ->
     grid = []
     grid.push(row) for row in @grid
     grid.reverse()
@@ -122,11 +126,11 @@ class Connect4Grid
 
     for row, i in grid
       cellText = []
-      blank = if @options.color then clc.bgBlack(" ") else " "
+      blank = " "
 
       for cell, j in row
-        cell = if cell and @options.color then clc.bold(clc.whiteBright(clc[colors[cell]](cell))) else cell
         t = cell || blank
+        t = playerFormat(t) if playerFormat
 
         cellText.push(t)
 
@@ -136,13 +140,8 @@ class Connect4Grid
     text.push([1..@xSize].join(blank))
     return text.join("\n")
 
-  getCurrentPlayer: (colored) ->
-    player = @currentPlayerIndex + 1 + ""
-
-    if colored and @options.color
-      return clc.bold(clc.whiteBright(clc[colors[player]](player)))
-
-    player
+  getCurrentPlayer: () ->
+    @currentPlayerIndex + 1 + ""
 
   getTurns: ->
     @turns
