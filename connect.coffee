@@ -9,8 +9,7 @@
 #
 # These choices were made at a higher priority than optimization or brevity.
 
-# Basically a one-liner for checking wins, instead of setting up counters and
-# stuff.
+# Basically a one-liner for checking wins. Hacky, but concise.
 isWinForRow = (row, player) ->
   reg = new RegExp("(#{player},?){4}")
   return row.join(",").match(reg)
@@ -28,6 +27,8 @@ isVerticalWin = (column, grid, player) ->
 # path from the bottom left and the top left that crosses the coordinates we
 # pass in.
 isDiagonalWin = (row, column, grid, player) ->
+  # start from the bottom leftmost, edging aginst the bottom or left such that
+  # it will intersect
   diagonalBottomLeft = []
 
   delta = Math.min(row, column)
@@ -43,6 +44,7 @@ isDiagonalWin = (row, column, grid, player) ->
 
   return true if isWinForRow(diagonalBottomLeft, player)
 
+  # start from the top leftmost, edging aginst the top or the left
   diagonalTopLeft = []
   delta = Math.max(Math.min(grid[0].length - 1 - row, column) - 1, 0)
   startingRow = row + delta
@@ -62,9 +64,7 @@ isDiagonalWin = (row, column, grid, player) ->
 # Drop into the given column, but error if the column is full or if the value
 # passed in is out of bounds or invalid.
 drop = (column, grid, xSize, ySize, player, callback) ->
-  return callback("Invalid column #{column}; out of range!") if column < 1 || column > xSize
-
-  column = column - 1
+  return callback("Invalid column #{column}; out of range!") if column < 0 || column >= xSize
 
   for i in [0...ySize]
     if grid[i][column] == undefined
@@ -75,18 +75,19 @@ drop = (column, grid, xSize, ySize, player, callback) ->
 
 # Run our win conditions, and return the result.
 isWin = (row, column, grid, player) ->
-  return true if isHorizontalWin(row, grid, player)
-  return true if isVerticalWin(column, grid, player)
-  return true if isDiagonalWin(row, column, grid, player)
+  isHorizontalWin(row, grid, player) or
+    isVerticalWin(column, grid, player) or
+    isDiagonalWin(row, column, grid, player)
 
-  return false
-
-# Just a quick check.
+# If it's the last turn, we shouldn't go further.
 isLastTurn = (grid, turns) ->
   return grid.length * grid[0].length == turns
 
+# All of the above are now private functions; only the functions that need to
+# be public will be exposed through Connect4Grid.
 class Connect4Grid
   constructor: (@xSize, @ySize, @players, @options) ->
+    # Look, an actual use for `new Array`: a bounded-size array.
     @grid = new Array(@ySize)
     @currentPlayerIndex = 0
     @turns = 0
@@ -94,8 +95,11 @@ class Connect4Grid
     for i in [0...@ySize]
       @grid[i] = new Array(@xSize)
 
+  # Take a turn - drop into a column and increment the current player,
+  # then call back with either an error or null and data about the move.
   turn: (column, callback) ->
     player = @getCurrentPlayer()
+    column = column - 1
 
     grid = drop(column, @grid, @xSize, @ySize, player, (err, data) =>
       return callback(err) if err
@@ -105,17 +109,20 @@ class Connect4Grid
 
       @turns++
 
-      return callback(null, { winner: player, turns: @turns }) if isWin(row, column - 1, @grid, player)
+      # Return immediately if we have a winner or if it's the last turn
+      return callback(null, { winner: player, turns: @turns }) if isWin(row, column, @grid, player)
       return callback(null, { winner: "nobody", turns: @turns }) if isLastTurn(@grid, @turns)
 
       @currentPlayerIndex++
-
-      if @currentPlayerIndex == @players
-        @currentPlayerIndex = 0
+      @currentPlayerIndex = 0 if @currentPlayerIndex == @players
 
       callback(null, false)
     )
 
+  # Return an ascii representation of the game board, with an optional
+  # formatting function that wraps cells. In the bin, we use this to add ansi
+  # terminal colors to players, but you might wrap these in span tags or
+  # something in html.
   toString: (playerFormat) ->
     grid = []
     grid.push(row) for row in @grid
