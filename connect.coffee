@@ -48,7 +48,6 @@ isDiagonalWin = (row, column, grid, player) ->
   startingRow = row + delta
   startingColumn = column - delta
   notEdge = true
-  console.log startingRow, startingColumn
 
   while notEdge
     diagonalTopLeft.push(grid[startingRow][startingColumn])
