@@ -1,27 +1,23 @@
 {
-  "name": "connect-4",
+  "name": "connect4",
   "description": "connect 4, in node, why not",
   "version": "0.0.1",
   "main": "app.js",
   "bin": {
-    "./bin.js"
-  }
+    "connect4": "./bin.js"
+  },
   "scripts": {
     "start": "node app.js",
     "test": "mocha --compilers coffee:coffee-script"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ajacksified/connect-4.git"
+    "url": "https://github.com/ajacksified/connect4.git"
   },
   "dependencies": {
     "coffee-script": ">= 1.3.3",
     "cli-color": ">= 0.2.1",
     "optimist": ">= 0.3.5"
-  },
-  "devDependencies": {
-    "mocha": "1.3.x",
-    "should": "1.1.x"
   },
   "engines": {
     "node": ">= 0.8.11",
