@@ -8,13 +8,9 @@
   var readline = require('readline'),
       clc = require('cli-color'),
       Connect4Grid = require('./connect'),
-      argv = require('optimist')
-        .usage('Usage: connect4 -w [num] -h [num] -p [num]')
-        .boolean('c')
-        .default('w', 7)
-        .default('h', 6)
-        .default('p', 2)
-        .argv,
+      args = require('optimist')
+        .usage("connect4 -w [num] -h [num] -p [num]")
+        .default({ w: 7, h: 6, p: 2 }),
       colors = ['bgRed', 'bgGreen', 'bgYellow', 'bgBlue', 'bgMagenta', 'bgCyan'],
       shuffle = function(array){
         var top = array.length, current, tmp;
@@ -29,11 +25,17 @@
         }
         return array;
       },
-      blank = clc.bgBlack(" "),
-      rl, grid, setPrompt, finish, colorize;
+      rl, grid, setPrompt, finish, colorize, argv;
+
+  argv = args.argv;
+
+  if(argv.help){
+    process.stdout.write(args.help());
+    process.exit(0);
+  }
 
   rl = readline.createInterface(process.stdin, process.stdout);
-  grid = new Connect4Grid(argv.w, argv.h, argv.p, { color: argv.c });
+  grid = new Connect4Grid(argv.w, argv.h, argv.p);
 
   colorize = function(player){
     if(colors[player]){
