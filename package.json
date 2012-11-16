@@ -1,7 +1,7 @@
 {
   "name": "connect4",
   "description": "connect 4, in node, why not",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "connect.coffee",
   "bin": {
     "connect4": "./bin.js"
@@ -20,7 +20,7 @@
     "optimist": ">= 0.3.5"
   },
   "engines": {
-    "node": ">= 0.8.11",
-    "npm":  ">= 1.1.49"
+    "node": ">= 0.8.0",
+    "npm":  ">= 1.1.0"
   }
 }
