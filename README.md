@@ -1,7 +1,7 @@
 Connect 4
 =========
 
-Install: `npm install connect4`
+Install: `npm install connect4 -g`
 
 Play: `connect4`
 
